@@ -96,9 +96,10 @@ def transform(point):
     return point - player.pos
 
 
-def toScreen(point):
+def toScreen(point, surface=False):
     transformed = transform(point)
-    transformed = rotate(transformed, player.rotation)
+    if not surface:
+        transformed = rotate(transformed, player.rotation)
     transformed *= SCALE
     transformed += P_CENTER
     return transformed
@@ -165,7 +166,7 @@ def scaler(value):
     return value//surface_scale
 
 surface = pygame.Surface((width//surface_scale, height//surface_scale))
-center = Point(width//(surface_scale*2), height//(surface_scale*2))
+surface_center = Point(width//(surface_scale*2), height//(surface_scale*2))
 
 
 surface.fill((255, 255, 255))
@@ -180,14 +181,13 @@ def updateSurface():
     scaledPlayer = Point(scaler(player.pos.x), scaler(player.pos.y))
 
     draw.circle(surface, player.color,
-                (scaledPlayer.x, scaledPlayer.y), scaler(player.radius))
+                (surface_center.x, surface_center.y), scaler(player.radius))
     draw.line(surface, (0, 0, 0),
-              (scaledPlayer.x, scaledPlayer.y), (scaledPlayer.x+10*cos(-player.rotation-math.pi/2), scaledPlayer.y+10*sin(-player.rotation-math.pi/2)))
+              (surface_center.x, surface_center.y), (surface_center.x+10*cos(-player.rotation-math.pi/2), surface_center.y+10*sin(-player.rotation-math.pi/2)))
 
     # draw line
     for wall in walls:
-        scaledWall = Wall(Point(scaler(wall.start.x), scaler(wall.start.y)),
-                          Point(scaler(wall.end.x), scaler(wall.end.y)))
+        scaledWall = Wall(toScreen(wall.start, True).divide(surface_scale), toScreen(wall.end, True).divide(surface_scale))
         draw.line(surface, (0, 0, 0),
                   (scaledWall.start.x, scaledWall.start.y), (scaledWall.end.x, scaledWall.end.y))
 #####

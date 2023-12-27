@@ -2,7 +2,7 @@ import math
 from math import cos, sin, atan2
 import pygame
 
-class Vector:
+class Point:
     def __init__(self, x=0, y=0):
         self.x = x
         self.y = y
@@ -22,6 +22,7 @@ class Vector:
         if not isinstance(scalar, (int)):
             raise TypeError("Unsupported operand type for *")
         return Point(self.x * scalar, self.y * scalar)
+    
     def set(self, x, y):
         self.x = x
         self.y = y
@@ -35,8 +36,9 @@ class Vector:
         self.x *= scalar
         self.y *= scalar
     def divide(self, scalar):
-        self.x /= scalar
-        self.y /= scalar
+        self.x //= scalar
+        self.y //= scalar
+        return self
     def dot(self, other):
         if not isinstance(other, Vector):
             raise TypeError("Unsupported operand type for dot product")
@@ -45,6 +47,8 @@ class Vector:
         return (self.x ** 2 + self.y ** 2) ** 0.5
     def normalize(self):
         self.divide(self.magnitude())
+    def angle(self):
+        return atan2(self.y, self.x)
 
 class Player:
     def __init__(self, name, pos, rotation=0, radius=20, color=(255, 0, 0)):
@@ -80,11 +84,11 @@ class Player:
             self.move(5*sin(self.rotation), 5*cos(self.rotation))
 
 
-class Point(Vector):
-    def __init__(self, x=0, y=0):
-        super().__init__(x, y)
-    def angle(self):
-        return atan2(self.y, self.x)
+# class Point(Vector):
+#     def __init__(self, x=0, y=0):
+#         super().__init__(x, y)
+#     def angle(self):
+#         return atan2(self.y, self.x)
         
 
 class Wall:
