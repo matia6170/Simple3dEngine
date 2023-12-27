@@ -19,7 +19,7 @@ class Point:
         return Point(self.x - other.x, self.y - other.y)
     
     def __mul__(self, scalar):
-        if not isinstance(scalar, (int)):
+        if not isinstance(scalar, (int, float)):
             raise TypeError("Unsupported operand type for *")
         return Point(self.x * scalar, self.y * scalar)
     

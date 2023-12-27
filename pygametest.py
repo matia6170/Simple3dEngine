@@ -7,16 +7,16 @@ from objects import *
 pygame.init()
 
 # Set up the window
-width = 800
-height = 600
-window = display.set_mode((width, height))
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+window = display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 display.set_caption("3D")
 
 SCALE = 1
 
 # find the center of the screen
-center_x = width // 2
-center_y = height // 2
+center_x = SCREEN_WIDTH // 2
+center_y = SCREEN_HEIGHT // 2
 P_CENTER = Point(center_x, center_y)
 
 # Set up the player
@@ -100,10 +100,18 @@ def transform(point):
     return rotate(transformed, player.rotation)
 
 
-def toScreen(point ):
-    transformed = Point(point.x, point.y)
-    transformed *= SCALE
-    transformed += Point(center_x, center_y)
+def toScreen(point):
+
+    if point.y == 0:
+        point.y = 0.0001
+
+    depth = point.y
+
+    depthScale = 1 / depth * 100
+
+    transformed = Point(-point.x, WALLHEIGHT/2)
+    transformed *= depthScale
+    transformed += Point(center_x, 0)
     return transformed
 
 
@@ -131,14 +139,13 @@ def lerpWall(start, end, clipDepth):
     else:
         clipX = top.x + (bottom.x - top.x) * proportion
 
-    return Wall(top, Point(clipX, clipDepth))
+    return Wall(top, Point(clipX, -clipDepth))
 
 
 def findClipWalls(walls, clipDepth=CLIPDEPTH):
     clipWalls = []
 
     # set an offset for the clip depth
-
 
     # loop through walls
     for wall in walls:
@@ -168,14 +175,19 @@ surface_scale = 5  # put the denominator here
 
 def scaler(value):
     return value//surface_scale
+
+
 def toSurface(point):
     transformed = point-player.pos
     transformed *= SCALE
     transformed += P_CENTER
     return transformed
 
-surface = pygame.Surface((width//surface_scale, height//surface_scale))
-surface_center = Point(width//(surface_scale*2), height//(surface_scale*2))
+
+surface = pygame.Surface(
+    (SCREEN_WIDTH//surface_scale, SCREEN_HEIGHT//surface_scale))
+surface_center = Point(SCREEN_WIDTH//(surface_scale*2),
+                       SCREEN_HEIGHT//(surface_scale*2))
 
 
 surface.fill((255, 255, 255))
@@ -193,7 +205,8 @@ def updateSurface():
                 (surface_center.x, surface_center.y), scaler(player.radius))
     draw.line(surface, (0, 0, 0),
               (surface_center.x, surface_center.y), (surface_center.x+10*cos(-player.rotation-math.pi/2), surface_center.y+10*sin(-player.rotation-math.pi/2)))
-
+    draw.line(surface, (0, 255, 255), (surface_center.x-30*cos(-player.rotation), surface_center.y-30*sin(-player.rotation)), 
+              (surface_center.x+30*cos(-player.rotation), surface_center.y+30*sin(-player.rotation)), width=2)
     # draw line
     for wall in walls:
         scaledWall = Wall(toSurface(wall.start).divide(
@@ -209,7 +222,7 @@ def updateScreen():
     window.fill((0, 0, 0))
 
     # Draw horizon
-    draw.line(window, (0, 255, 0), (0, center_y), (width, center_y))
+    draw.line(window, (0, 255, 0), (0, center_y), (SCREEN_WIDTH, center_y))
 
     # draw cicle in the cetner of the screen
     # draw.circle(window, (255, 0, 0), (center_x, center_y), 20)
@@ -221,23 +234,23 @@ def updateScreen():
     for wall in clipWalls:
         w = Wall(toScreen(wall.start), toScreen(wall.end))
 
-        draw.line(window, (255, 255, 255),
-                  (w.start.x, w.start.y), (w.end.x, w.end.y))
+        # draw.line(window, (255, 255, 255),
+        #           (w.start.x, w.start.y), (w.end.x, w.end.y))
 
-        # # top Edge
-        # draw.line(window, (255, 255, 255),
-        #           (w.start.x, center_y-w.start.y), (w.end.x, center_y-w.end.y))
-        # # bottom Edge
-        # draw.line(window, (255, 255, 255),
-        #           (w.start.x, center_y+w.start.y), (w.end.x, center_y+w.end.y))
-        
-        # # Vertical Walls
-        # if w.start.y > CLIPDEPTH:
-        #     draw.line(window, (255, 255, 255),
-        #               (w.start.x, center_y-w.start.y), (w.start.x, center_y+w.start.y))
-        # if w.end.y > CLIPDEPTH:
-        #     draw.line(window, (255, 255, 255),
-        #               (w.end.x, center_y-w.end.y), (w.end.x, center_y+w.end.y))
+        # top Edge
+        draw.line(window, (255, 255, 255),
+                  (w.start.x, center_y-w.start.y), (w.end.x, center_y-w.end.y))
+        # bottom Edge
+        draw.line(window, (255, 255, 255),
+                  (w.start.x, center_y+w.start.y), (w.end.x, center_y+w.end.y))
+
+        # Vertical Walls
+        if w.start.y < CLIPDEPTH:
+            draw.line(window, (255, 255, 255),
+                  (w.start.x, center_y-w.start.y), (w.start.x, center_y+w.start.y))
+        if w.end.y < CLIPDEPTH:
+            draw.line(window, (255, 255, 255),
+                  (w.end.x, center_y-w.end.y), (w.end.x, center_y+w.end.y))
 
     updateSurface()
     window.blit(surface, (0, 0))
