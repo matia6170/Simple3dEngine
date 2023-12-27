@@ -7,9 +7,10 @@ from objects import *
 pygame.init()
 
 # Set up the window
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 1920 
+SCREEN_HEIGHT = 1080
 window = display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
 display.set_caption("3D")
 
 SCALE = 1
@@ -20,7 +21,7 @@ center_y = SCREEN_HEIGHT // 2
 P_CENTER = Point(center_x, center_y)
 
 # Set up the player
-player = Player('Player', Point(0, 0), 0, 20, (255, 0, 0))
+player = Player('Player', Point(-50, -50), 0, 20, (255, 0, 0))
 
 
 # Set up the clock
@@ -31,13 +32,14 @@ fps = 60
 CLIPDEPTH = 0.1
 WALLHEIGHT = 100
 
+############## MAP STARTS HERE #####################
 # set up the walls
 
 walls = [
-    Wall(Point(0, 0), Point(0, 100)),
-    Wall(Point(0, 100), Point(100, 100)),
-    Wall(Point(100, 100), Point(100, 0)),
-    Wall(Point(100, 0), Point(0, 0)),
+    # Wall(Point(0, 0), Point(0, 100)),
+    # Wall(Point(0, 100), Point(100, 100)),
+    # Wall(Point(100, 100), Point(100, 0)),
+    # Wall(Point(100, 0), Point(0, 0)),
     # Triangle
     Wall(Point(-100, -175), Point(-125, -225)),  # Top to bottom left
     Wall(Point(-125, -225), Point(-75, -225)),  # Bottom left to bottom right
@@ -64,29 +66,74 @@ walls = [
     # Wall(Point(600, 400), Point(600, 800)),
     # Wall(Point(700, 0), Point(700, 300)),
     # Wall(Point(700, 500), Point(700, 800)),
-    # # Outer walls
-    # Wall(Point(0, 0), Point(0, 800)),
-    # Wall(Point(0, 800), Point(800, 800)),
-    # Wall(Point(800, 800), Point(800, 0)),
-    # Wall(Point(800, 0), Point(0, 0)),
-    # # Maze walls
-    # Wall(Point(100, 0), Point(100, 300)),
-    # Wall(Point(100, 400), Point(100, 800)),
-    # Wall(Point(200, 0), Point(200, 200)),
-    # Wall(Point(200, 300), Point(200, 500)),
-    # Wall(Point(200, 600), Point(200, 800)),
-    # Wall(Point(300, 100), Point(300, 400)),
-    # Wall(Point(300, 500), Point(300, 700)),
-    # Wall(Point(400, 0), Point(400, 300)),
-    # Wall(Point(400, 400), Point(400, 800)),
-    # Wall(Point(500, 100), Point(500, 500)),
-    # Wall(Point(500, 600), Point(500, 800)),
-    # Wall(Point(600, 0), Point(600, 400)),
-    # Wall(Point(600, 500), Point(600, 800)),
-    # Wall(Point(700, 200), Point(700, 600)),
-    # Wall(Point(700, 700), Point(700, 800)),
+    # Outer walls
+    Wall(Point(0, 0), Point(0, 800)),
+    Wall(Point(0, 800), Point(800, 800)),
+    Wall(Point(800, 800), Point(800, 0)),
+    Wall(Point(800, 0), Point(0, 0)),
+    # Maze walls
+    Wall(Point(100, 0), Point(100, 300)),
+    Wall(Point(100, 400), Point(100, 800)),
+    Wall(Point(200, 0), Point(200, 200)),
+    Wall(Point(200, 300), Point(200, 500)),
+    Wall(Point(200, 600), Point(200, 800)),
+    Wall(Point(300, 100), Point(300, 400)),
+    Wall(Point(300, 500), Point(300, 700)),
+    Wall(Point(400, 0), Point(400, 300)),
+    Wall(Point(400, 400), Point(400, 800)),
+    Wall(Point(500, 100), Point(500, 500)),
+    Wall(Point(500, 600), Point(500, 800)),
+    Wall(Point(600, 0), Point(600, 400)),
+    Wall(Point(600, 500), Point(600, 800)),
+    Wall(Point(700, 200), Point(700, 600)),
+    Wall(Point(700, 700), Point(700, 800)),
 ]
+# build a room
+for x in range(0, 900, 100):
+    walls.append(Wall(Point(x, -800), Point(x, 0)))
+    walls.append(Wall(Point(0, x-800), Point(800, x-800)))
 
+for x in range(-900, 0, 100):
+    walls.append(Wall(Point(x, 0), Point(x, 800), True))
+    walls.append(Wall(Point(-900, x+900), Point(0, x+900), True))
+
+# Define the center and radius of the pentagon
+center = Point(-800, -800)
+radius = 150
+
+# Define the angles for the vertices of the pentagon
+angles = [i * 2 * math.pi / 5 for i in range(5)]
+
+# Create the vertices of the pentagon
+vertices = [Point(center.x + radius * math.cos(angle),
+                  center.y + radius * math.sin(angle)) for angle in angles]
+
+# Create the walls of the pentagon
+for i in range(5):
+    start = vertices[i]
+    end = vertices[(i + 1) % 5]  # Use modulo to loop back to the first vertex
+    walls.append(Wall(start, end))
+
+# Create the walls of the square
+walls.append(Wall(Point(-100, -100), Point(-500, -100)))
+walls.append(Wall(Point(-500, -600), Point(-500, -100)))
+
+
+def appendSquare(x, y, size=100):
+    walls.append(Wall(Point(x, y), Point(x, y+size)))
+    walls.append(Wall(Point(x, y+size), Point(x+size, y+size)))
+    walls.append(Wall(Point(x+size, y+size), Point(x+size, y)))
+    walls.append(Wall(Point(x + size, y), Point(x, y)))
+
+appendSquare(-500, 400,100)
+appendSquare(-700, 100,100)
+
+for y in range(-1000, -400, 50):
+    appendSquare(-400, y, 20)
+    appendSquare(-300, y, 20)
+
+
+############## MAP ENDS HERE #####################
 
 def rotate(point, angle):
     return Point(
@@ -107,15 +154,17 @@ def toScreen(point):
 
     depth = point.y
 
-    depthScale = 1 / depth * 100
+    depthScale = 1 / depth * SCREEN_HEIGHT
 
     transformed = Point(-point.x, WALLHEIGHT/2)
     transformed *= depthScale
     transformed += Point(center_x, 0)
+
     return transformed
+# , (1 / depth * 1000)
 
 
-def lerpWall(start, end, clipDepth):
+def lerpWall(start, end, clipDepth, isFloor):
 
     top, bottom = Point(), Point()
 
@@ -139,7 +188,7 @@ def lerpWall(start, end, clipDepth):
     else:
         clipX = top.x + (bottom.x - top.x) * proportion
 
-    return Wall(top, Point(clipX, -clipDepth))
+    return Wall(top, Point(clipX, -clipDepth), isFloor)
 
 
 def findClipWalls(walls, clipDepth=CLIPDEPTH):
@@ -156,13 +205,13 @@ def findClipWalls(walls, clipDepth=CLIPDEPTH):
         # Then, check if the lines are clipped or not.
         if start.y < clipDepth and end.y < clipDepth:
             # both are not clipped
-            clipWalls.append(Wall(start, end))
+            clipWalls.append(Wall(start, end, wall.floor))
         elif start.y > clipDepth and end.y > clipDepth:
             # both are clipped
             continue
         else:
             # one is clipped
-            clipWalls.append(lerpWall(start, end, clipDepth))
+            clipWalls.append(lerpWall(start, end, clipDepth, wall.floor))
 
     return clipWalls
 
@@ -205,7 +254,7 @@ def updateSurface():
                 (surface_center.x, surface_center.y), scaler(player.radius))
     draw.line(surface, (0, 0, 0),
               (surface_center.x, surface_center.y), (surface_center.x+10*cos(-player.rotation-math.pi/2), surface_center.y+10*sin(-player.rotation-math.pi/2)))
-    draw.line(surface, (0, 255, 255), (surface_center.x-30*cos(-player.rotation), surface_center.y-30*sin(-player.rotation)), 
+    draw.line(surface, (0, 255, 255), (surface_center.x-30*cos(-player.rotation), surface_center.y-30*sin(-player.rotation)),
               (surface_center.x+30*cos(-player.rotation), surface_center.y+30*sin(-player.rotation)), width=2)
     # draw line
     for wall in walls:
@@ -232,25 +281,32 @@ def updateScreen():
 
     # draw line
     for wall in clipWalls:
-        w = Wall(toScreen(wall.start), toScreen(wall.end))
+        topPoint = toScreen(wall.start)
+        bottomPoint = toScreen(wall.end)
+        w = Wall(topPoint, bottomPoint)
+
+        # width = abs(int((w1+w2)/2))
+        width = 1
 
         # draw.line(window, (255, 255, 255),
         #           (w.start.x, w.start.y), (w.end.x, w.end.y))
 
-        # top Edge
-        draw.line(window, (255, 255, 255),
-                  (w.start.x, center_y-w.start.y), (w.end.x, center_y-w.end.y))
         # bottom Edge
         draw.line(window, (255, 255, 255),
-                  (w.start.x, center_y+w.start.y), (w.end.x, center_y+w.end.y))
+                  (w.start.x, center_y-w.start.y), (w.end.x, center_y-w.end.y), width=width)
+        if wall.floor:
+            continue
+        # top Edge
+        draw.line(window, (255, 255, 255),
+                  (w.start.x, center_y+w.start.y), (w.end.x, center_y+w.end.y), width)
 
         # Vertical Walls
         if w.start.y < CLIPDEPTH:
             draw.line(window, (255, 255, 255),
-                  (w.start.x, center_y-w.start.y), (w.start.x, center_y+w.start.y))
+                      (w.start.x, center_y-w.start.y), (w.start.x, center_y+w.start.y), width)
         if w.end.y < CLIPDEPTH:
             draw.line(window, (255, 255, 255),
-                  (w.end.x, center_y-w.end.y), (w.end.x, center_y+w.end.y))
+                      (w.end.x, center_y-w.end.y), (w.end.x, center_y+w.end.y), width)
 
     updateSurface()
     window.blit(surface, (0, 0))

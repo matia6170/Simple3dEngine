@@ -66,10 +66,10 @@ class Player:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
             #self.move(-5, 0)
-            self.rotation += 0.1
+            self.rotation += 0.02
         if keys[pygame.K_RIGHT]:
             #self.move(5, 0)
-            self.rotation -= 0.1
+            self.rotation -= 0.02
         if keys[pygame.K_a]:
             #move left
             self.move(-5*cos(self.rotation), 5*sin(self.rotation))
@@ -92,11 +92,13 @@ class Player:
         
 
 class Wall:
-    def __init__(self, start, end):
+    def __init__(self, start, end, floor=False):
         if not isinstance(start, Point) or not isinstance(end, Point):
             raise TypeError('start and end must be instances of Point')
         self.start = start
         self.end = end
+        self.floor = floor
+
 
 
 
