@@ -7,8 +7,8 @@ from objects import *
 pygame.init()
 
 # Set up the window
-SCREEN_WIDTH = 1920 
-SCREEN_HEIGHT = 1080
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
 window = display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 display.set_caption("3D")
