@@ -35,25 +35,32 @@ walls = [
     # Wall(Point(0, 100), Point(100, 100)),
     # Wall(Point(100, 100), Point(100, 0)),
     # Wall(Point(100, 0), Point(0, 0)),
-    # # Triangle
-    # Wall(Point(-100, -175), Point(-125, -225)),  # Top to bottom left
-    # Wall(Point(-125, -225), Point(-75, -225)),  # Bottom left to bottom right
-    # Wall(Point(-75, -225), Point(-100, -175))  # Bottom right to top
+    # Triangle
+    Wall(Point(-100, -175), Point(-125, -225)),  # Top to bottom left
+    Wall(Point(-125, -225), Point(-75, -225)),  # Bottom left to bottom right
+    Wall(Point(-75, -225), Point(-100, -175)),  # Bottom right to top
 
 
     # # Outer walls
-    # Wall(Point(0, 0), Point(0, 600)),
-    # Wall(Point(0, 600), Point(800, 600)),
-    # Wall(Point(800, 600), Point(800, 0)),
+    # Wall(Point(0, 0), Point(0, 800)),
+    # Wall(Point(0, 800), Point(800, 800)),
+    # Wall(Point(800, 800), Point(800, 0)),
     # Wall(Point(800, 0), Point(0, 0)),
     # # Maze walls
-    # Wall(Point(100, 0), Point(100, 500)),
-    # Wall(Point(200, 100), Point(200, 600)),
-    # Wall(Point(300, 0), Point(300, 500)),
-    # Wall(Point(400, 100), Point(400, 600)),
-    # Wall(Point(500, 0), Point(500, 500)),
-    # Wall(Point(600, 100), Point(600, 600)),
-    # Wall(Point(700, 0), Point(700, 500)),
+    # Wall(Point(100, 0), Point(100, 300)),
+    # Wall(Point(100, 500), Point(100, 800)),
+    # Wall(Point(200, 0), Point(200, 200)),
+    # Wall(Point(200, 400), Point(200, 800)),
+    # Wall(Point(300, 0), Point(300, 300)),
+    # Wall(Point(300, 500), Point(300, 800)),
+    # Wall(Point(400, 0), Point(400, 200)),
+    # Wall(Point(400, 400), Point(400, 800)),
+    # Wall(Point(500, 0), Point(500, 300)),
+    # Wall(Point(500, 500), Point(500, 800)),
+    # Wall(Point(600, 0), Point(600, 200)),
+    # Wall(Point(600, 400), Point(600, 800)),
+    # Wall(Point(700, 0), Point(700, 300)),
+    # Wall(Point(700, 500), Point(700, 800)),
     # Outer walls
     Wall(Point(0, 0), Point(0, 800)),
     Wall(Point(0, 800), Point(800, 800)),
@@ -61,20 +68,20 @@ walls = [
     Wall(Point(800, 0), Point(0, 0)),
     # Maze walls
     Wall(Point(100, 0), Point(100, 300)),
-    Wall(Point(100, 500), Point(100, 800)),
+    Wall(Point(100, 400), Point(100, 800)),
     Wall(Point(200, 0), Point(200, 200)),
-    Wall(Point(200, 400), Point(200, 800)),
-    Wall(Point(300, 0), Point(300, 300)),
-    Wall(Point(300, 500), Point(300, 800)),
-    Wall(Point(400, 0), Point(400, 200)),
+    Wall(Point(200, 300), Point(200, 500)),
+    Wall(Point(200, 600), Point(200, 800)),
+    Wall(Point(300, 100), Point(300, 400)),
+    Wall(Point(300, 500), Point(300, 700)),
+    Wall(Point(400, 0), Point(400, 300)),
     Wall(Point(400, 400), Point(400, 800)),
-    Wall(Point(500, 0), Point(500, 300)),
-    Wall(Point(500, 500), Point(500, 800)),
-    Wall(Point(600, 0), Point(600, 200)),
-    Wall(Point(600, 400), Point(600, 800)),
-    Wall(Point(700, 0), Point(700, 300)),
-    Wall(Point(700, 500), Point(700, 800)),
-
+    Wall(Point(500, 100), Point(500, 500)),
+    Wall(Point(500, 600), Point(500, 800)),
+    Wall(Point(600, 0), Point(600, 400)),
+    Wall(Point(600, 500), Point(600, 800)),
+    Wall(Point(700, 200), Point(700, 600)),
+    Wall(Point(700, 700), Point(700, 800)),
 ]
 
 
@@ -97,16 +104,71 @@ def toScreen(point):
     return transformed
 
 
+def lerpWall(start, end, clipDepth):
+
+    top, bottom = Point(), Point()
+
+    # get top and bottom points
+    if start.y < clipDepth:
+        top = start
+        bottom = end
+    else:
+        top = end
+        bottom = start
+
+    # get total height
+    dy = bottom.y-top.y
+  
+    # get proportions
+    proportion = (clipDepth - top.y) / dy
+
+    # get clip point depending on if top is on the left or right
+    if top.x > bottom.x:
+        clipX = top.x - (top.x - bottom.x) * proportion
+    else:
+        clipX = top.x + (bottom.x - top.x) * proportion
+
+    return Wall(top, Point(clipX, clipDepth))
 
 
-##### surface test
+def findClipWalls(walls, clipDepth=0.1):
+    clipWalls = []
 
+    # set an offset for the clip depth
+    clipDepth = center_y - clipDepth
+
+    # loop through walls
+    for wall in walls:
+        # rotate the lines according so that it in a state right before rendering.
+        start = toScreen(wall.start)
+        end = toScreen(wall.end)
+
+        # Then, check if the lines are clipped or not.
+        if start.y < clipDepth and end.y < clipDepth:
+            # both are not clipped
+            clipWalls.append(Wall(start, end))
+        elif start.y > clipDepth and end.y > clipDepth:
+            # both are clipped
+            continue
+        else:
+            # one is clipped
+            clipWalls.append(lerpWall(start, end, clipDepth))
+
+    return clipWalls
+
+
+# surface test(MINIMAP)
 # Set up the surface
-surface = pygame.Surface((width//5, height//5))
-surface_scale = 0.2
 
-surface.fill((255,255, 255))
+surface_scale = 5 # put the denominator here
+def scaler(value):
+    return value//surface_scale
 
+surface = pygame.Surface((width//surface_scale, height//surface_scale))
+center = Point(width//(surface_scale*2), height//(surface_scale*2))
+
+
+surface.fill((255, 255, 255))
 
 
 def updateSurface():
@@ -115,42 +177,39 @@ def updateSurface():
     surface.fill((255, 255, 255))
 
     # Draw player
+    scaledPlayer = Point(scaler(player.pos.x), scaler(player.pos.y))
 
     draw.circle(surface, player.color,
-                (player.pos.x//5, player.pos.y//5), player.radius//5)
+                (scaledPlayer.x, scaledPlayer.y), scaler(player.radius))
     draw.line(surface, (0, 0, 0),
-              (player.pos.x//5, player.pos.y//5), (player.pos.x//5+10*cos(-player.rotation-math.pi/2), player.pos.y//5+10*sin(-player.rotation-math.pi/2)))
+              (scaledPlayer.x, scaledPlayer.y), (scaledPlayer.x+10*cos(-player.rotation-math.pi/2), scaledPlayer.y+10*sin(-player.rotation-math.pi/2)))
 
     # draw line
     for wall in walls:
-       
+        scaledWall = Wall(Point(scaler(wall.start.x), scaler(wall.start.y)),
+                          Point(scaler(wall.end.x), scaler(wall.end.y)))
         draw.line(surface, (0, 0, 0),
-                  (wall.start.x//5, wall.start.y//5), (wall.end.x//5, wall.end.y//5))
-
-    
-
-
-
+                  (scaledWall.start.x, scaledWall.start.y), (scaledWall.end.x, scaledWall.end.y))
 #####
+
 
 def updateScreen():
     global player
     # Clear the window
     window.fill((0, 0, 0))
 
-    # Draw player
-    playerPos = toScreen(player.pos)
-    draw.circle(window, player.color,
-                (playerPos.x, playerPos.y), player.radius)
-    draw.line(window, (255, 255, 255),
-              (playerPos.x, playerPos.y), (playerPos.x, playerPos.y-20))
+    # draw cicle in the cetner of the screen
+    draw.circle(window, (255, 0, 0), (center_x, center_y), 20)
+
+    # Find walls which clip
+    clipWalls = findClipWalls(walls)
 
     # draw line
-    for wall in walls:
-        w = Wall(toScreen(wall.start), toScreen(wall.end))
+    for wall in clipWalls:
+        w = Wall((wall.start), (wall.end))
         draw.line(window, (255, 255, 255),
                   (w.start.x, w.start.y), (w.end.x, w.end.y))
-    
+
     updateSurface()
     window.blit(surface, (0, 0))
     # Update the window

@@ -3,7 +3,7 @@ from math import cos, sin, atan2
 import pygame
 
 class Vector:
-    def __init__(self, x, y):
+    def __init__(self, x=0, y=0):
         self.x = x
         self.y = y
     def __str__(self):
@@ -22,6 +22,14 @@ class Vector:
         if not isinstance(scalar, (int)):
             raise TypeError("Unsupported operand type for *")
         return Point(self.x * scalar, self.y * scalar)
+    def set(self, x, y):
+        self.x = x
+        self.y = y
+    def set(self, other):
+        if not isinstance(other, Point):
+            raise TypeError("Unsupported operand type for set")
+        self.x = other.x
+        self.y = other.y
             
     def multiply(self, scalar):
         self.x *= scalar
@@ -73,7 +81,7 @@ class Player:
 
 
 class Point(Vector):
-    def __init__(self, x, y):
+    def __init__(self, x=0, y=0):
         super().__init__(x, y)
     def angle(self):
         return atan2(self.y, self.x)
