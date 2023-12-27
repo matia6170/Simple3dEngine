@@ -27,14 +27,17 @@ player = Player('Player', Point(0, 0), 0, 20, (255, 0, 0))
 clock = time.Clock()
 fps = 60
 
+# set clipdepth
+CLIPDEPTH = 0.1
+WALLHEIGHT = 100
 
 # set up the walls
 
 walls = [
-    # Wall(Point(0, 0), Point(0, 100)),
-    # Wall(Point(0, 100), Point(100, 100)),
-    # Wall(Point(100, 100), Point(100, 0)),
-    # Wall(Point(100, 0), Point(0, 0)),
+    Wall(Point(0, 0), Point(0, 100)),
+    Wall(Point(0, 100), Point(100, 100)),
+    Wall(Point(100, 100), Point(100, 0)),
+    Wall(Point(100, 0), Point(0, 0)),
     # Triangle
     Wall(Point(-100, -175), Point(-125, -225)),  # Top to bottom left
     Wall(Point(-125, -225), Point(-75, -225)),  # Bottom left to bottom right
@@ -61,27 +64,27 @@ walls = [
     # Wall(Point(600, 400), Point(600, 800)),
     # Wall(Point(700, 0), Point(700, 300)),
     # Wall(Point(700, 500), Point(700, 800)),
-    # Outer walls
-    Wall(Point(0, 0), Point(0, 800)),
-    Wall(Point(0, 800), Point(800, 800)),
-    Wall(Point(800, 800), Point(800, 0)),
-    Wall(Point(800, 0), Point(0, 0)),
-    # Maze walls
-    Wall(Point(100, 0), Point(100, 300)),
-    Wall(Point(100, 400), Point(100, 800)),
-    Wall(Point(200, 0), Point(200, 200)),
-    Wall(Point(200, 300), Point(200, 500)),
-    Wall(Point(200, 600), Point(200, 800)),
-    Wall(Point(300, 100), Point(300, 400)),
-    Wall(Point(300, 500), Point(300, 700)),
-    Wall(Point(400, 0), Point(400, 300)),
-    Wall(Point(400, 400), Point(400, 800)),
-    Wall(Point(500, 100), Point(500, 500)),
-    Wall(Point(500, 600), Point(500, 800)),
-    Wall(Point(600, 0), Point(600, 400)),
-    Wall(Point(600, 500), Point(600, 800)),
-    Wall(Point(700, 200), Point(700, 600)),
-    Wall(Point(700, 700), Point(700, 800)),
+    # # Outer walls
+    # Wall(Point(0, 0), Point(0, 800)),
+    # Wall(Point(0, 800), Point(800, 800)),
+    # Wall(Point(800, 800), Point(800, 0)),
+    # Wall(Point(800, 0), Point(0, 0)),
+    # # Maze walls
+    # Wall(Point(100, 0), Point(100, 300)),
+    # Wall(Point(100, 400), Point(100, 800)),
+    # Wall(Point(200, 0), Point(200, 200)),
+    # Wall(Point(200, 300), Point(200, 500)),
+    # Wall(Point(200, 600), Point(200, 800)),
+    # Wall(Point(300, 100), Point(300, 400)),
+    # Wall(Point(300, 500), Point(300, 700)),
+    # Wall(Point(400, 0), Point(400, 300)),
+    # Wall(Point(400, 400), Point(400, 800)),
+    # Wall(Point(500, 100), Point(500, 500)),
+    # Wall(Point(500, 600), Point(500, 800)),
+    # Wall(Point(600, 0), Point(600, 400)),
+    # Wall(Point(600, 500), Point(600, 800)),
+    # Wall(Point(700, 200), Point(700, 600)),
+    # Wall(Point(700, 700), Point(700, 800)),
 ]
 
 
@@ -93,15 +96,14 @@ def rotate(point, angle):
 
 
 def transform(point):
-    return point - player.pos
+    transformed = point - player.pos
+    return rotate(transformed, player.rotation)
 
 
-def toScreen(point, surface=False):
-    transformed = transform(point)
-    if not surface:
-        transformed = rotate(transformed, player.rotation)
+def toScreen(point ):
+    transformed = Point(point.x, point.y)
     transformed *= SCALE
-    transformed += P_CENTER
+    transformed += Point(center_x, center_y)
     return transformed
 
 
@@ -119,7 +121,7 @@ def lerpWall(start, end, clipDepth):
 
     # get total height
     dy = bottom.y-top.y
-  
+
     # get proportions
     proportion = (clipDepth - top.y) / dy
 
@@ -132,17 +134,17 @@ def lerpWall(start, end, clipDepth):
     return Wall(top, Point(clipX, clipDepth))
 
 
-def findClipWalls(walls, clipDepth=0.1):
+def findClipWalls(walls, clipDepth=CLIPDEPTH):
     clipWalls = []
 
     # set an offset for the clip depth
-    clipDepth = center_y - clipDepth
+
 
     # loop through walls
     for wall in walls:
         # rotate the lines according so that it in a state right before rendering.
-        start = toScreen(wall.start)
-        end = toScreen(wall.end)
+        start = transform(wall.start)
+        end = transform(wall.end)
 
         # Then, check if the lines are clipped or not.
         if start.y < clipDepth and end.y < clipDepth:
@@ -161,9 +163,16 @@ def findClipWalls(walls, clipDepth=0.1):
 # surface test(MINIMAP)
 # Set up the surface
 
-surface_scale = 5 # put the denominator here
+surface_scale = 5  # put the denominator here
+
+
 def scaler(value):
     return value//surface_scale
+def toSurface(point):
+    transformed = point-player.pos
+    transformed *= SCALE
+    transformed += P_CENTER
+    return transformed
 
 surface = pygame.Surface((width//surface_scale, height//surface_scale))
 surface_center = Point(width//(surface_scale*2), height//(surface_scale*2))
@@ -187,7 +196,8 @@ def updateSurface():
 
     # draw line
     for wall in walls:
-        scaledWall = Wall(toScreen(wall.start, True).divide(surface_scale), toScreen(wall.end, True).divide(surface_scale))
+        scaledWall = Wall(toSurface(wall.start).divide(
+            surface_scale), toSurface(wall.end).divide(surface_scale))
         draw.line(surface, (0, 0, 0),
                   (scaledWall.start.x, scaledWall.start.y), (scaledWall.end.x, scaledWall.end.y))
 #####
@@ -198,17 +208,36 @@ def updateScreen():
     # Clear the window
     window.fill((0, 0, 0))
 
+    # Draw horizon
+    draw.line(window, (0, 255, 0), (0, center_y), (width, center_y))
+
     # draw cicle in the cetner of the screen
-    draw.circle(window, (255, 0, 0), (center_x, center_y), 20)
+    # draw.circle(window, (255, 0, 0), (center_x, center_y), 20)
 
     # Find walls which clip
-    clipWalls = findClipWalls(walls)
+    clipWalls = findClipWalls(walls, CLIPDEPTH)
 
     # draw line
     for wall in clipWalls:
-        w = Wall((wall.start), (wall.end))
+        w = Wall(toScreen(wall.start), toScreen(wall.end))
+
         draw.line(window, (255, 255, 255),
                   (w.start.x, w.start.y), (w.end.x, w.end.y))
+
+        # # top Edge
+        # draw.line(window, (255, 255, 255),
+        #           (w.start.x, center_y-w.start.y), (w.end.x, center_y-w.end.y))
+        # # bottom Edge
+        # draw.line(window, (255, 255, 255),
+        #           (w.start.x, center_y+w.start.y), (w.end.x, center_y+w.end.y))
+        
+        # # Vertical Walls
+        # if w.start.y > CLIPDEPTH:
+        #     draw.line(window, (255, 255, 255),
+        #               (w.start.x, center_y-w.start.y), (w.start.x, center_y+w.start.y))
+        # if w.end.y > CLIPDEPTH:
+        #     draw.line(window, (255, 255, 255),
+        #               (w.end.x, center_y-w.end.y), (w.end.x, center_y+w.end.y))
 
     updateSurface()
     window.blit(surface, (0, 0))
